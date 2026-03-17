@@ -1,16 +1,33 @@
 # SpecAI — PM Agent
 
-> An AI-powered product management tool that kills bad features before they ship.
+> The PM agent that kills bad features before they ship.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/specai-pm-agent&env=ANTHROPIC_API_KEY&envDescription=Your%20Anthropic%20API%20key%20from%20console.anthropic.com&envLink=https://console.anthropic.com)
 
 ---
 
-## What it does
+Most features fail not in engineering — they fail in the room where the decision was made. SpecAI is the quality gate between an idea and a roadmap commitment.
 
-SpecAI is a 5-phase AI agent that forces product managers to defend every feature proposal before it reaches engineering. Built with Next.js and powered by Claude, it eliminates gut-feel roadmap decisions by enforcing evidence, customer voice, and structured reasoning at every step.
+---
 
-**The problem it solves:** Most features fail not in engineering — they fail in the room where the decision was made. Weak customer evidence, no baselines, no engineering signal, no post-launch accountability. SpecAI gates all of it.
+## Without SpecAI vs With SpecAI
+
+| Without SpecAI | With SpecAI |
+|---|---|
+| Features approved on gut feel and seniority | Scored defensibility gate — every feature earns its place |
+| No baseline metrics — success is undefined at launch | Baselines and KPIs locked in before a line is written |
+| Customer evidence is anecdotal, not structured | Direct customer quotes required to proceed |
+| Engineering estimates happen after approval | Engineering complexity captured before commitment |
+| No post-launch learning loop — same mistakes repeat | Post-launch tracker feeds learnings into future specs |
+| Weak features consume 60–70% of build capacity | Only high-conviction features reach engineering |
+
+---
+
+## By the numbers
+
+- **75+** — minimum defensibility score required to proceed
+- **5** — structured phases from idea to engineering handoff
+- **3** — frameworks scored simultaneously: RICE, ICE, MoSCoW
 
 ---
 
@@ -18,98 +35,83 @@ SpecAI is a 5-phase AI agent that forces product managers to defend every featur
 
 | Phase | What happens |
 |---|---|
-| **Phase 1 — Defensibility** | 6 Socratic questions scored 0–100. Hard gate at 75. Evidence attached per answer. Specific remediation steps for weak areas. |
+| **Phase 1 — Defensibility** | 6 Socratic questions scored 0–100. Hard gate at 75. Evidence attached per answer. Specific remediation steps for every weak area. |
 | **Phase 1b — Customer Voice** | Minimum 3 direct customer quotes required. Before/after narrative. Stakeholder alignment checkboxes. |
-| **Phase 1c — Prioritization** | Force rank against active roadmap. Opportunity cost named. Engineering complexity estimated. Pre-mortem completed. |
-| **Phase 2 — Research** | Upload any format — Gong transcripts, Zendesk exports, competitor URLs, interview notes. 20MB limit. |
+| **Phase 1c — Prioritization** | Force rank against active roadmap. Opportunity cost named explicitly. Engineering complexity estimated. Pre-mortem completed. |
+| **Phase 2 — Research** | Upload Gong transcripts, Zendesk tickets, competitor URLs, interview notes. 20MB limit. Any format accepted. |
 | **Phase 3 — Spec Output** | Full spec with RICE + ICE + MoSCoW scores, Go/No-Go recommendation with top reasons, customer narrative, competitive position, risks, rollback plan. PM approves or rejects. |
 | **Phase 4 — Feedback Loop** | Post-launch KPI tracker. Variance analysis. Learning log feeds back into future Phase 1 sessions automatically. |
 
 ---
 
-## CPO-Level Features
+## Key Features
 
-- **Scored defensibility gate** — 75+ required to proceed (configurable per session)
-- **Evidence per question** — screenshots, PDFs, exports attached directly to each answer
-- **Customer voice required** — 3 minimum direct quotes before spec is generated
-- **Pre-mortem built in** — Amazon's highest-signal practice. Assume failure, write the headline
-- **Force ranking** — this feature vs your active roadmap, explicit opportunity cost
-- **Engineering signal** — T-shirt size, risk level, dependency mapping before commitment
-- **Review date commitment** — PM is on record with a post-launch return date
-- **Learning loop** — Phase 4 variance analysis feeds into future Phase 1 sessions
-- **Notion export** — spec structured to map directly to Notion blocks
+**Evidence-based scoring** — Attach screenshots, PDFs, or transcripts to each answer. Evidence quality raises your score directly.
+
+**Actionable next steps** — Every weak score comes with specific remediation steps — not vague feedback. Named tools, data sources, and people to contact.
+
+**Pre-mortem built in** — Forces PMs to articulate how this fails before committing. Amazon's highest-signal product practice.
+
+**Customer voice required** — Minimum 3 direct customer quotes must be logged before a spec can be approved. No anecdotes.
+
+**Roadmap prioritization** — Features ranked against existing roadmap. Opportunity cost made explicit before approval.
+
+**Learning loop** — Post-launch variance feeds back into Phase 1 automatically. The system gets smarter with every feature shipped.
+
+---
+
+## Built for teams that want every feature to earn its place
+
+Powered entirely by Claude API. Runs in any browser. Deploys to Vercel in under 30 minutes.
+
+- **Zero infra cost** — Vercel free tier is sufficient for 1–10 PMs
+- **~$0.10–$0.40 per spec** — Claude API usage only
 - **Vercel-ready** — API key secured server-side, never exposed to browser
 
 ---
 
-## Tech Stack
+## How to use
 
-- **Frontend:** Next.js 14 + vanilla CSS
-- **AI:** Claude Sonnet (Anthropic API) via server-side API route
-- **Hosting:** Vercel (free tier)
-- **Cost:** ~$0.10–$0.40 per feature spec in API usage
+### Option A — GitHub Pages (each user brings their own key)
+The app shows an API key input at the top of the page. Each user:
+1. Gets a free key at [console.anthropic.com](https://console.anthropic.com)
+2. Pastes it into the field — stays in their browser only, never stored
+3. Uses the full app immediately with no setup
 
----
+### Option B — Vercel (team shares one key — recommended)
+Deploy to Vercel and add your API key as an environment variable. No setup needed for team members.
 
-## Deploy to Vercel (no coding required)
+**Step 1** — Get your API key at [console.anthropic.com](https://console.anthropic.com)
 
-### Step 1 — Get your API key
-1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Create an account and generate an API key
-3. Copy the key (starts with `sk-ant-...`)
+**Step 2** — Upload to GitHub
+1. github.com → New repository → `specai-pm-agent` → Public → Create
+2. Click **uploading an existing file** → drag all files from this folder → Commit
 
-### Step 2 — Upload to GitHub
-1. Go to [github.com](https://github.com) → sign in or create free account
-2. Click **New repository**
-3. Name it `specai-pm-agent`, set to Public, click **Create repository**
-4. Click **uploading an existing file** and upload all files from this folder
+**Step 3** — Deploy to Vercel
+1. vercel.com → Add New Project → select `specai-pm-agent` → Deploy
+2. Settings → Environment Variables → add `ANTHROPIC_API_KEY` = your key
+3. Deployments → Redeploy
 
-### Step 3 — Deploy to Vercel
-1. Go to [vercel.com](https://vercel.com) → sign in with GitHub
-2. Click **Add New Project** → select `specai-pm-agent`
-3. Click **Deploy** — Vercel auto-detects Next.js
-4. Go to **Settings → Environment Variables**
-5. Add: `ANTHROPIC_API_KEY` = your key from Step 1
-6. Go to **Deployments** → Redeploy
-
-**Your live URL is now active.**
+Your live URL: `https://specai-pm-agent.vercel.app`
 
 ---
 
-## Local Development
+## Tech stack
 
-```bash
-# Install dependencies
-npm install
-
-# Set up environment
-cp .env.example .env.local
-# Add your API key to .env.local
-
-# Run locally
-npm run dev
-# Open http://localhost:3000
-```
+- **Frontend:** Vanilla HTML/CSS/JS — no frameworks, no build step needed
+- **AI:** Claude Sonnet (Anthropic API)
+- **Hosting:** Vercel (free tier) or GitHub Pages
+- **Cost:** ~$0.10–$0.40 per complete feature spec
 
 ---
 
-## Security
-
-- API key lives only in Vercel environment variables
-- All Claude calls route through `/api/claude` server-side
-- Users never see or have access to your key
-- Key is not present anywhere in client-side code or page source
-
----
-
-## Project Structure
+## Project structure
 
 ```
 specai-pm-agent/
-├── pages/
-│   ├── index.js          # Full 5-phase PM agent UI
-│   └── api/
-│       └── claude.js     # Secure server-side Claude API route
+├── index.html        ← Full app with value prop landing + 5-phase agent
+├── api/
+│   └── claude.js     ← Vercel server route (API key secured server-side)
 ├── package.json
 ├── .env.example
 ├── .gitignore
@@ -118,9 +120,4 @@ specai-pm-agent/
 
 ---
 
-## Built by
-
-Conceived and designed as an AI-native product management tool demonstrating how Claude can enforce product quality gates, synthesize multi-source research, and generate production-ready feature specs.
-
-Powered by [Anthropic Claude](https://anthropic.com) · Deployed on [Vercel](https://vercel.com)
-
+Built with [Anthropic Claude](https://anthropic.com) · Deployed on [Vercel](https://vercel.com)
