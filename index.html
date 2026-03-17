@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpecAI — PM Agent</title>
+<meta name="description" content="AI-powered product management tool. Forces PMs to defend every feature before it reaches engineering." />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080808;--surface:#111111;--surface2:#181818;--border:#272727;--border2:#353535;--text:#f0f0f0;--text2:#888888;--text3:#444444;--accent:#ffffff;--go:#22c55e;--warn:#f59e0b;--stop:#ef4444;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;min-height:100vh}
+.app{max-width:780px;margin:0 auto;padding:0 24px 80px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:28px 0 22px;border-bottom:1px solid var(--border);margin-bottom:28px}
+.logo{font-size:15px;font-weight:500;letter-spacing:-.3px}.logo span{color:var(--text2);font-weight:300}
+.dots{display:flex;gap:6px}.dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:background .3s}.dot.active{background:var(--accent)}.dot.done{background:var(--go)}
+.pbar{height:1px;background:var(--border);margin-bottom:36px}.pfill{height:100%;background:var(--accent);transition:width .6s cubic-bezier(.4,0,.2,1)}
+.screen{display:none;animation:fadeIn .35s ease}.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.plabel{font-size:10px;font-weight:500;letter-spacing:1.4px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;font-family:var(--mono)}
+.stitle{font-size:26px;font-weight:300;letter-spacing:-.5px;margin-bottom:6px;line-height:1.3}
+.ssub{font-size:13px;color:var(--text2);margin-bottom:32px;line-height:1.65}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px}
+.card2{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px}
+input[type=text],input[type=password],input[type=date],textarea,select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color .2s;resize:none}
+input:focus,textarea:focus,select:focus{border-color:var(--border2)}input::placeholder,textarea::placeholder{color:var(--text3)}select option{background:var(--surface2)}
+.lbl{font-size:12px;color:var(--text2);margin-bottom:7px}.sublbl{font-size:11px;color:var(--text3);margin-top:4px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.pill{padding:7px 15px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font);font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}.pill:hover{border-color:var(--border2);color:var(--text)}.pill.sel{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:none;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-p{background:var(--accent);color:#000}.btn-p:hover{background:#e8e8e8}.btn-p:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed}
+.btn-g{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-g:hover{border-color:var(--border2);color:var(--text)}
+.btn-go{background:rgba(34,197,94,.08);color:var(--go);border:1px solid rgba(34,197,94,.2)}.btn-go:hover{background:rgba(34,197,94,.15)}
+.btn-no{background:rgba(239,68,68,.08);color:var(--stop);border:1px solid rgba(239,68,68,.2)}.btn-no:hover{background:rgba(239,68,68,.15)}
+.btn-w{background:rgba(245,158,11,.08);color:var(--warn);border:1px solid rgba(245,158,11,.2)}.btn-w:hover{background:rgba(245,158,11,.15)}
+.brow{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.score-ring{display:flex;align-items:center;gap:20px;padding:20px 24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px}
+.snum{font-size:52px;font-weight:300;letter-spacing:-2px;line-height:1}.snum.hi{color:var(--go)}.snum.mid{color:var(--warn)}.snum.lo{color:var(--stop)}
+.sbar-wrap{flex:1}.sbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px}.sbar-fill{height:100%;border-radius:2px;transition:width 1.2s ease}
+.qcard{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:16px}
+.qnum{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;font-family:var(--mono)}
+.qtext{font-size:15px;color:var(--text);margin-bottom:4px;line-height:1.5}.qhint{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5}
+.q-upload-row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.q-ubtn{display:flex;align-items:center;gap:5px;padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-family:var(--font);font-size:11px;cursor:pointer;transition:all .2s}.q-ubtn:hover{border-color:var(--border2);color:var(--text2)}
+.q-ftags{display:flex;flex-wrap:wrap;gap:5px;flex:1}.q-ftag{display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;font-size:10px;color:var(--text2);font-family:var(--mono)}.q-ftag-x{cursor:pointer;color:var(--text3);font-size:12px}.q-ftag-x:hover{color:var(--stop)}
+.bd-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}.bd-row:last-child{border-bottom:none}.bd-label{font-size:12px;color:var(--text2);min-width:170px}.bd-bar-w{flex:1;height:3px;background:var(--border);border-radius:2px}.bd-bar{height:100%;border-radius:2px}.bd-sc{font-size:11px;font-family:var(--mono);min-width:24px;text-align:right}
+.acard{border-radius:10px;padding:14px 16px;margin-bottom:10px}.acard.urgent{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15)}.acard.moderate{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15)}.acard.good{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12)}
+.atitle{font-size:11px;font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}.atitle.urgent{color:var(--stop)}.atitle.moderate{color:var(--warn)}.atitle.good{color:var(--go)}
+.asteps{list-style:none;padding:0}.asteps li{font-size:12px;color:var(--text2);padding:3px 0 3px 14px;position:relative;line-height:1.5}.asteps li::before{content:'→';position:absolute;left:0;color:var(--text3);font-size:11px}
+.uzone{border:1px dashed var(--border2);border-radius:10px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px}.uzone:hover{border-color:var(--text3);background:var(--surface)}
+.flimit{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:var(--mono);padding:5px 0}
+.ftags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.ftag{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text2)}.ftag-x{cursor:pointer;color:var(--text3)}.ftag-x:hover{color:var(--stop)}
+.urow{display:flex;gap:8px;margin-bottom:8px}.urow input{flex:1}.uadd{padding:9px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:16px;transition:all .2s}.uadd:hover{color:var(--text);border-color:var(--border2)}
+.quote-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}.quote-row textarea{flex:1;min-height:52px}.quote-src{width:130px;flex-shrink:0}
+.qrm{padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);cursor:pointer;font-size:14px;transition:all .2s;line-height:1}.qrm:hover{color:var(--stop);border-color:rgba(239,68,68,.3)}
+.rank-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}.rank-row:last-child{border-bottom:none}.rank-num{font-size:18px;font-weight:300;color:var(--text3);min-width:24px}.rank-sc{font-size:20px;font-weight:300;min-width:40px;text-align:right;font-family:var(--mono)}.rank-sc.hi{color:var(--go)}.rank-sc.mid{color:var(--warn)}.rank-sc.lo{color:var(--stop)}
+.eng-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chk-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}.chk-row:last-child{border-bottom:none}.chk{width:14px;height:14px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent;transition:all .15s}.chk.checked{background:var(--go);border-color:var(--go);color:#000}.chk-label{font-size:12px;color:var(--text2);line-height:1.5}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}.scell{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}.scell-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-family:var(--mono);margin-bottom:8px}.scell-val{font-size:26px;font-weight:300;letter-spacing:-1px}
+.vcard{border-radius:12px;padding:22px;margin-bottom:20px}.vc-go{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2)}.vc-no{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2)}.vc-cond{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.2)}
+.vtitle{font-size:17px;font-weight:500}.vt-go{color:var(--go)}.vt-no{color:var(--stop)}.vt-cond{color:var(--warn)}
+.vreason{font-size:12px;color:var(--text2);margin-top:10px;line-height:1.65}.ritem{display:flex;gap:8px;margin-bottom:6px}.rdot{width:3px;height:3px;border-radius:50%;background:var(--text3);margin-top:9px;flex-shrink:0}
+.sdiv{height:1px;background:var(--border);margin:22px 0}.ssec{margin-bottom:22px}.sslabel{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);margin-bottom:8px}.sscontent{font-size:13px;color:var(--text2);line-height:1.7}
+.premortem-card{background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.mtable{width:100%;border-collapse:collapse}.mtable th{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-family:var(--mono);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:400}.mtable td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}.mtable tr:last-child td{border-bottom:none}.vpos{color:var(--go)}.vneg{color:var(--stop)}
+.ism{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;width:100%}
+.loading{display:flex;align-items:center;gap:12px;padding:20px;color:var(--text2);font-size:13px}.ldots{display:flex;gap:4px}.ldot{width:4px;height:4px;border-radius:50%;background:var(--text3);animation:pulse 1.4s ease infinite}.ldot:nth-child(2){animation-delay:.2s}.ldot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.nbtn{display:flex;align-items:center;gap:7px;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-family:var(--font);cursor:pointer;transition:all .2s}.nbtn:hover{border-color:var(--border2);color:var(--text)}.nicon{width:15px;height:15px;background:var(--text2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--bg);font-weight:700;flex-shrink:0}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono)}.bg{background:rgba(34,197,94,.1);color:var(--go)}.bw{background:rgba(245,158,11,.1);color:var(--warn)}.br{background:rgba(239,68,68,.1);color:var(--stop)}
+.fbanner{padding:12px 14px;border-radius:8px;font-size:12px;margin-bottom:14px;display:none;line-height:1.5}.fbanner.show{display:block}.fbanner.ok{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);color:var(--go)}.fbanner.err{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);color:var(--stop)}
+.srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px}
+.llog{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:12px;color:var(--text2);line-height:1.6}.llog-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px}
+/* API Key Banner */
+.api-banner{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:16px 18px;margin-bottom:20px}
+.api-banner-title{font-size:12px;font-weight:500;color:#93c5fd;margin-bottom:8px}
+.api-banner-sub{font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6}
+.api-banner input{background:var(--surface2);border:1px solid rgba(59,130,246,.25);border-radius:6px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;width:100%;margin-top:0}
+.api-status{display:flex;align-items:center;gap:6px;font-size:11px;margin-top:8px}
+.api-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}.api-dot.ok{background:var(--go)}.api-dot.bad{background:var(--stop)}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header"><div class="logo">SpecAI <span>/ PM Agent</span></div><div class="dots" id="dots"></div></div>
+<div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div>
+
+<!-- ★ API KEY BANNER — always visible, required to use the app -->
+<div class="api-banner" id="api-banner">
+  <div class="api-banner-title">Anthropic API Key — Required to run the agent</div>
+  <input type="password" id="apikey" placeholder="sk-ant-api03-..." oninput="checkKey()" autocomplete="off" />
+  <div class="api-banner-sub">
+    Free key at <a href="https://console.anthropic.com" target="_blank" style="color:#93c5fd;text-decoration:none">console.anthropic.com</a>
+    &nbsp;·&nbsp; Stays in your browser only, never stored or sent anywhere else
+    &nbsp;·&nbsp; ~$0.10–$0.40 per complete spec
+  </div>
+  <div class="api-status"><div class="api-dot bad" id="api-dot"></div><span id="api-status-text" style="color:var(--text3)">No key entered — paste your key above to activate</span></div>
+</div>
+
+<!-- Value Proposition Landing -->
+<div id="vp-section" style="margin-bottom:40px">
+
+  <div style="text-align:center;padding:40px 0 32px">
+    <div style="font-size:22px;font-weight:500;color:var(--text);letter-spacing:-.5px;margin-bottom:10px;line-height:1.3">The PM agent that kills bad features before they ship</div>
+    <div style="font-size:14px;color:var(--text2);max-width:520px;margin:0 auto;line-height:1.7">Most features fail not in engineering — they fail in the room where the decision was made. SpecAI is the quality gate between an idea and a roadmap commitment.</div>
+  </div>
+
+  <!-- Before / After -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--stop);margin-bottom:14px">Without SpecAI</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(239,68,68,.4);border:1px solid rgba(239,68,68,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Features approved on gut feel and seniority</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(239,68,68,.4);border:1px solid rgba(239,68,68,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">No baseline metrics — success is undefined at launch</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(239,68,68,.4);border:1px solid rgba(239,68,68,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Customer evidence is anecdotal, not structured</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(239,68,68,.4);border:1px solid rgba(239,68,68,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Engineering estimates happen after approval</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(239,68,68,.4);border:1px solid rgba(239,68,68,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">No post-launch learning loop — same mistakes repeat</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(239,68,68,.4);border:1px solid rgba(239,68,68,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Weak features consume 60–70% of build capacity</div></div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:20px 22px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--go);margin-bottom:14px">With SpecAI</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Scored defensibility gate — every feature earns its place</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Baselines and KPIs locked in before a line is written</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Direct customer quotes required to proceed</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Engineering complexity captured before commitment</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Post-launch tracker feeds learnings into future specs</div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.6);flex-shrink:0;margin-top:5px"></div><div style="font-size:13px;color:var(--text2);line-height:1.5">Only high-conviction features reach engineering</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:32px;font-weight:300;color:var(--text);letter-spacing:-1px;line-height:1">75+</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.4">minimum score to proceed</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:32px;font-weight:300;color:var(--text);letter-spacing:-1px;line-height:1">5</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.4">structured phases from idea to handoff</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:32px;font-weight:300;color:var(--text);letter-spacing:-1px;line-height:1">3</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.4">frameworks scored — RICE, ICE, MoSCoW</div>
+    </div>
+  </div>
+
+  <!-- Phase overview -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">Phase 1</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">Defensibility</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">6 Socratic questions. Evidence per answer. Scored 0–100 with hard gate.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">Phase 2</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">Research</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Upload Gong, Zendesk, interviews, competitor URLs. Any format.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">Phase 3</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">Spec output</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Full spec with Go/No-Go, risks, rollback plan. PM approves or rejects.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">Phase 4</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">Feedback loop</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Post-launch KPI tracker. Variance analysis feeds into future Phase 1.</div>
+    </div>
+  </div>
+
+  <!-- Feature highlights -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px">↑</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px">Evidence-based scoring</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Attach screenshots, PDFs, or transcripts per answer. Evidence quality raises your score.</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px">→</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px">Actionable next steps</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Every weak score comes with specific remediation steps — not vague feedback.</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:14px 16px;display:flex;gap:12px">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--stop)">✕</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px">Pre-mortem built in</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Forces PMs to articulate how this fails before committing — Amazon's highest-signal practice.</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--go)">✓</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px">Customer voice required</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Minimum 3 direct customer quotes must be logged before a spec can be approved.</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px">≡</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px">Roadmap prioritization</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Features ranked against existing roadmap. Opportunity cost made explicit before approval.</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px">↺</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px">Learning loop</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Post-launch variance feeds back into Phase 1 automatically. System gets smarter with every feature.</div></div>
+    </div>
+  </div>
+
+  <!-- CTA footer -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;margin-bottom:10px">
+    <div style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:8px">Built for teams that want every feature to earn its place</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Powered entirely by Claude API. Runs in any browser. Deploys to Vercel in under 30 minutes.</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <span style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(34,197,94,.1);color:var(--go);border:1px solid rgba(34,197,94,.2)">Zero infra cost</span>
+      <span style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.2)">~$0.10–$0.40 per spec</span>
+      <span style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(59,130,246,.1);color:#93c5fd;border:1px solid rgba(59,130,246,.2)">Vercel-ready</span>
+    </div>
+  </div>
+
+  <div style="height:1px;background:var(--border);margin:32px 0"></div>
+</div>
+
+<!-- S0 -->
+<div class="screen active" id="s0">
+  <div class="plabel">Session Setup</div><div class="stitle">Welcome to SpecAI</div>
+  <div class="ssub">Paste your Anthropic API key above, then configure your session below.</div>
+  <div class="card">
+    <div style="margin-bottom:18px"><div class="lbl">PM Name</div><input type="text" id="pmname" placeholder="Your name" /></div>
+    <div style="margin-bottom:18px"><div class="lbl">Feature Name</div><input type="text" id="featname" placeholder="What feature are you proposing?" /></div>
+    <div style="margin-bottom:18px">
+      <div class="lbl">Gate Preference</div>
+      <div class="pills" id="gatepills"><div class="pill sel" data-v="hard">Hard Block at 75</div><div class="pill" data-v="warn">Warn &amp; Allow</div><div class="pill" data-v="score">Score Only</div></div>
+      <div class="sublbl" id="gatedesc">Feature cannot proceed below 75. Strictest gate.</div>
+    </div>
+    <div><div class="lbl">Review Date <span style="color:var(--text3)">(post-launch commitment)</span></div><input type="date" id="reviewdate" /></div>
+  </div>
+  <div class="card"><div class="lbl">Roadmap &amp; Prior Attempts <span style="color:var(--text3)">(optional)</span></div><textarea id="roadmap" rows="3" placeholder="Paste current roadmap, past rejected features, or strategic priorities..."></textarea></div>
+  <div class="brow"><button class="btn btn-p" onclick="startSession()" id="btn-begin" disabled>Paste API key above to begin</button></div>
+</div>
+
+<!-- S1 -->
+<div class="screen" id="s1">
+  <div class="plabel">Phase 1 — Frame the Problem</div><div class="stitle">Defensibility Check</div>
+  <div class="ssub">Answer each question. Attach evidence directly to each answer — screenshots, exports, transcripts. Evidence quality improves your score.</div>
+  <div class="score-ring">
+    <div><div class="snum lo" id="scorenum">0</div><div style="font-size:11px;color:var(--text2);margin-top:3px">/ 100</div></div>
+    <div class="sbar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px"><span>0 — Weak</span><span style="color:var(--warn)">75 — Threshold</span><span>100</span></div>
+      <div class="sbar"><div class="sbar-fill" id="sbarfill" style="width:0%;background:var(--stop)"></div></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="sstatus">Not scored yet</div>
+    </div>
+  </div>
+  <div id="qcontainer"></div>
+  <div class="fbanner" id="p1fb"></div>
+  <div id="breakdown-area" style="display:none">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px">Score Breakdown</div>
+    <div class="card2" id="bd-scores"></div>
+    <div style="margin-top:18px;margin-bottom:10px;font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px">Required Actions Before Proceeding</div>
+    <div id="action-cards"></div>
+    <div style="margin-top:18px;margin-bottom:10px;font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px">PM Remediation Checklist</div>
+    <div class="card"><ul id="remediation-list" style="list-style:none;padding:0"></ul></div>
+    <div id="score-next-row" style="display:none;margin-top:24px;padding:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;text-align:center">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Review the breakdown and checklist above, then proceed</div>
+      <button class="btn btn-p" id="btnnext-score" style="padding:12px 32px;font-size:14px">Continue to Customer Voice →</button>
+    </div>
+  </div>
+  <div class="brow"><button class="btn btn-g" onclick="prevQ()" id="btnprev" style="display:none">← Previous</button><button class="btn btn-p" onclick="nextQ()" id="btnnext" disabled>Continue</button></div>
+</div>
+
+<!-- S1b -->
+<div class="screen" id="s1b">
+  <div class="plabel">Phase 1b of 4 — Customer Voice</div><div class="stitle">Direct Customer Evidence</div>
+  <div class="ssub">Minimum 3 direct customer quotes — exact words from Gong, interviews, support tickets, or emails.</div>
+  <div class="card"><div class="lbl">Customer Quotes <span style="color:var(--text3)">(minimum 3)</span></div><div id="quote-list"></div><button class="btn btn-g" onclick="addQuote()" style="margin-top:8px;font-size:12px;padding:7px 14px">+ Add Quote</button></div>
+  <div class="card">
+    <div class="lbl">Before &amp; After Customer Narrative</div>
+    <div style="margin-bottom:12px"><div class="sublbl" style="margin-bottom:6px">Today — what is painful?</div><textarea id="narrative-before" rows="3" placeholder="Describe the friction customers experience today..."></textarea></div>
+    <div><div class="sublbl" style="margin-bottom:6px">After — what does effortless look like?</div><textarea id="narrative-after" rows="3" placeholder="What does the customer tell a colleague about this feature?"></textarea></div>
+  </div>
+  <div class="card">
+    <div class="lbl">Stakeholder Alignment</div><div class="sublbl" style="margin-bottom:12px">Verbally aligned with the following?</div>
+    <div>
+      <div class="chk-row"><div class="chk" id="chk-sales" onclick="toggleChk('chk-sales')"></div><div class="chk-label">Sales lead — confirmed blocking deals or driving expansion</div></div>
+      <div class="chk-row"><div class="chk" id="chk-cs" onclick="toggleChk('chk-cs')"></div><div class="chk-label">Customer Success — confirmed pain and champion accounts identified</div></div>
+      <div class="chk-row"><div class="chk" id="chk-eng" onclick="toggleChk('chk-eng')"></div><div class="chk-label">Engineering lead — aware of proposal, complexity not flagged as blocker</div></div>
+    </div>
+  </div>
+  <div class="fbanner" id="p1bfb"></div>
+  <div class="brow"><button class="btn btn-g" onclick="goS(1)">← Back</button><button class="btn btn-p" onclick="proceedToP1c()">Continue →</button></div>
+</div>
+
+<!-- S1c -->
+<div class="screen" id="s1c">
+  <div class="plabel">Phase 1c of 4 — Prioritization &amp; Engineering</div><div class="stitle">Roadmap Fit &amp; Feasibility</div>
+  <div class="ssub">Force-rank this against your active features. Capture an engineering signal before committing.</div>
+  <div class="card">
+    <div class="lbl">Force Rank</div><div class="sublbl" style="margin-bottom:14px">List active features and score each 1–10 on strategic value.</div>
+    <div id="rank-list"></div><button class="btn btn-g" onclick="addRankRow()" style="margin-top:10px;font-size:12px;padding:7px 14px">+ Add Feature</button>
+  </div>
+  <div class="card"><div class="lbl">Opportunity Cost</div><textarea id="opp-cost" rows="3" placeholder="What gets deprioritized if we build this?"></textarea></div>
+  <div class="card">
+    <div class="lbl">Engineering Complexity</div>
+    <div class="eng-grid" style="margin-bottom:14px">
+      <div><div class="sublbl" style="margin-bottom:6px">T-shirt size</div><select id="eng-size"><option value="">Select size</option><option>XS — days</option><option>S — 1-2 weeks</option><option>M — 3-4 weeks</option><option>L — 1-2 months</option><option>XL — quarter+</option></select></div>
+      <div><div class="sublbl" style="margin-bottom:6px">Risk level</div><select id="eng-risk"><option value="">Select risk</option><option>Low — well-understood</option><option>Medium — some unknowns</option><option>High — significant uncertainty</option></select></div>
+    </div>
+    <div class="sublbl" style="margin-bottom:6px">Dependencies</div><textarea id="eng-deps" rows="2" placeholder="List infrastructure, API, or feature dependencies..."></textarea>
+  </div>
+  <div class="card">
+    <div class="lbl" style="color:var(--stop)">Pre-mortem — assume this fails</div>
+    <div class="sublbl" style="margin-bottom:10px">6 months post-launch, this feature failed. Write the headline and top 3 reasons.</div>
+    <div class="premortem-card">
+      <div class="sublbl" style="margin-bottom:6px;color:var(--stop)">Failure headline</div><input type="text" id="premortem-headline" placeholder="e.g. 'Feature X shelved — adoption never exceeded 8%'" style="margin-bottom:12px" />
+      <div class="sublbl" style="margin-bottom:6px;color:var(--stop)">Top 3 reasons it failed</div><textarea id="premortem-reasons" rows="3" placeholder="1. Underestimated workflow entrenchment&#10;2. No CS adoption plan&#10;3. Aspirational targets"></textarea>
+    </div>
+  </div>
+  <div class="brow"><button class="btn btn-g" onclick="showSc('s1b')">← Back</button><button class="btn btn-p" onclick="goS(2)">Proceed to Research →</button></div>
+</div>
+
+<!-- S2 -->
+<div class="screen" id="s2">
+  <div class="plabel">Phase 2 of 4 — Research Upload</div><div class="stitle">Feed the Agent</div>
+  <div class="ssub">Upload all supporting data. Any format accepted. Files from Phase 1 are already included.</div>
+  <div class="card"><div class="lbl">Competitor URLs <span style="color:var(--text3)">(max 3)</span></div><div id="urllist"><div class="urow"><input type="text" placeholder="https://competitor.com/feature" class="urlinput" /><button class="uadd" onclick="addUrl()">+</button></div></div></div>
+  <div class="card"><div class="lbl">Right to Win</div><textarea id="right-to-win" rows="3" placeholder="What can we do that competitors cannot?"></textarea></div>
+  <div class="card">
+    <div class="lbl">Additional Files <span style="color:var(--text3)">(20MB total)</span></div>
+    <div class="uzone" onclick="document.getElementById('bulkfile').click()"><div style="font-size:20px;color:var(--text3);margin-bottom:8px">↑</div><div style="font-size:13px;color:var(--text2);margin-bottom:3px">Drop files or click to upload</div><div style="font-size:11px;color:var(--text3)">PDF · CSV · DOCX · XLSX · PNG · JPG · TXT</div></div>
+    <input type="file" id="bulkfile" multiple style="display:none" onchange="handleBulkFiles(this)" />
+    <div class="flimit"><span>Any format accepted</span><span id="sizectr">0 MB / 20 MB</span></div><div class="ftags" id="bulkftags"></div>
+  </div>
+  <div class="card"><div class="lbl">Paste Raw Data <span style="color:var(--text3)">(Gong, Zendesk, interviews...)</span></div><textarea id="pastedata" rows="5" placeholder="Paste any raw text — the agent accepts any format..."></textarea></div>
+  <div class="fbanner" id="p2fb"></div>
+  <div class="brow"><button class="btn btn-g" onclick="showSc('s1c')">← Back</button><button class="btn btn-p" onclick="runResearch()">Run Research →</button></div>
+</div>
+
+<!-- S3 -->
+<div class="screen" id="s3">
+  <div class="plabel">Phase 3 of 4 — Spec Output</div>
+  <div class="srow"><div class="stitle" style="margin:0">Feature Spec</div><button class="nbtn" onclick="exportNotion()"><div class="nicon">N</div>Export to Notion</button></div>
+  <div class="loading" id="specloading"><div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div><span>Synthesizing all inputs and generating spec...</span></div>
+  <div id="specbody" style="display:none">
+    <div class="sgrid"><div class="scell"><div class="scell-label">RICE</div><div class="scell-val" id="rice">—</div></div><div class="scell"><div class="scell-label">ICE</div><div class="scell-val" id="ice">—</div></div><div class="scell"><div class="scell-label">MoSCoW</div><div class="scell-val" id="moscow" style="font-size:14px;padding-top:4px">—</div></div></div>
+    <div class="vcard vc-go" id="vcard"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div class="vtitle vt-go" id="vtitle">Recommendation</div><span class="badge bg" id="vbadge">GO</span></div><div class="vreason" id="vreasons"></div></div>
+    <div class="sdiv"></div>
+    <div class="ssec"><div class="sslabel">Context</div><div class="sscontent" id="sctx"></div></div>
+    <div class="ssec"><div class="sslabel">Job To Be Done</div><div class="sscontent" id="sjtbd"></div></div>
+    <div class="ssec"><div class="sslabel">Customer Narrative</div><div class="sscontent" id="snarrative"></div></div>
+    <div class="ssec"><div class="sslabel">Competitive Position</div><div class="sscontent" id="scomp"></div></div>
+    <div class="ssec"><div class="sslabel">Principles</div><div class="sscontent" id="sprins"></div></div>
+    <div class="ssec"><div class="sslabel">Requirements</div><div class="sscontent" id="sreqs"></div></div>
+    <div class="ssec"><div class="sslabel">Success Metrics with Baselines</div><div class="sscontent" id="smets"></div></div>
+    <div class="ssec"><div class="sslabel">Risks &amp; Mitigations</div><div class="sscontent" id="srisks"></div></div>
+    <div class="ssec"><div class="sslabel">Pre-Mortem Assessment</div><div class="sscontent" id="spremortem"></div></div>
+    <div class="ssec"><div class="sslabel">Rollback Plan</div><div class="sscontent" id="srollback"></div></div>
+    <div class="ssec"><div class="sslabel">Engineering Assessment</div><div class="sscontent" id="seng"></div></div>
+    <div class="sdiv"></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Review Date Commitment</div>
+    <div style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-bottom:20px" id="review-date-display">—</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">PM Decision</div>
+    <div class="brow"><button class="btn btn-go" onclick="pmDecide('approve')">Approve Spec</button><button class="btn btn-w" onclick="pmDecide('followup')">Request Follow-up</button><button class="btn btn-no" onclick="pmDecide('reject')">Reject</button></div>
+  </div>
+</div>
+
+<!-- Follow-up -->
+<div class="screen" id="sfollowup">
+  <div class="plabel">Follow-up Required</div><div class="stitle">Resolve Open Questions</div>
+  <div class="ssub">Provide additional context. The agent reruns the spec with this incorporated.</div>
+  <div class="card"><textarea id="followuptxt" rows="7" placeholder="Address the gaps — add data, customer quotes, engineering input, or revised scope..."></textarea></div>
+  <div class="brow"><button class="btn btn-g" onclick="goS(3)">← Back to Spec</button><button class="btn btn-p" onclick="rerunSpec()">Rerun Spec →</button></div>
+</div>
+
+<!-- Done -->
+<div class="screen" id="sdone">
+  <div class="plabel">Approved</div><div class="stitle">Spec Approved &amp; Logged</div>
+  <div class="ssub">Feature spec approved. Ready for engineering handoff.</div>
+  <div class="card" style="text-align:center;padding:40px 24px">
+    <div style="font-size:44px;color:var(--go);font-weight:300;letter-spacing:-2px;margin-bottom:12px">✓</div>
+    <div style="font-size:15px;color:var(--text);margin-bottom:6px" id="donefeat"></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Approved by <span id="donepm"></span></div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="done-review-date"></div>
+  </div>
+  <div class="brow" style="justify-content:center;flex-wrap:wrap">
+    <button class="nbtn" onclick="exportNotion()"><div class="nicon">N</div>Export to Notion</button>
+    <button class="btn btn-g" onclick="goS(4)">Post-Launch Tracker →</button>
+    <button class="btn btn-g" onclick="newSession()">New Feature</button>
+  </div>
+</div>
+
+<!-- S4 -->
+<div class="screen" id="s4">
+  <div class="plabel">Phase 4 of 4 — Post-Launch Feedback Loop</div><div class="stitle">Performance Tracker</div>
+  <div class="ssub">Log actual results vs. predicted KPIs. The agent analyzes variance and writes a learning entry that feeds future Phase 1 sessions.</div>
+  <div class="card"><table class="mtable"><thead><tr><th>Metric</th><th>Predicted</th><th>Actual</th><th>Variance</th></tr></thead><tbody id="mtbody"></tbody></table></div>
+  <div class="card" style="margin-top:10px"><div class="lbl">Qualitative Feedback</div><textarea id="qualfb" rows="4" placeholder="What did customers say? What surprised the team? What would you do differently?"></textarea></div>
+  <div id="varanalysis" style="display:none" class="card"><div class="sslabel">Agent Analysis</div><div class="sscontent" id="vartext" style="margin-top:8px"></div></div>
+  <div style="margin-top:20px;margin-bottom:10px;font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px">Learning Log</div>
+  <div id="learninglog"></div>
+  <div class="brow"><button class="btn btn-g" onclick="addMetricRow()">+ Add Metric</button><button class="btn btn-p" onclick="analyzeVariance()">Analyze &amp; Log Learning</button><button class="btn btn-g" onclick="newSession()" style="margin-left:auto">New Feature Session</button></div>
+</div>
+
+</div>
+<script>
+const Qs=[
+  {q:"What is the job to be done?",hint:"The specific task customers need to complete — not the feature. Focus on the outcome.",bdkey:"jtbd"},
+  {q:"Why now? What makes this the right moment to build?",hint:"Market signal, competitive pressure, demand spike. Vague answers score low.",bdkey:"timing"},
+  {q:"What does success look like in 90 days? Specific, measurable metrics.",hint:"Name the metric, current baseline, and target. Directional language is not acceptable.",bdkey:"metrics"},
+  {q:"If we build this, what does it unlock strategically?",hint:"New revenue, segments, upsell, competitive moat, or platform capability.",bdkey:"strategy"},
+  {q:"How is this different from anything we've tried or killed before?",hint:"If attempted before, explain why it failed and what changed.",bdkey:"diff"},
+  {q:"Which customer segment is most affected? What is the revenue exposure?",hint:"Name the segment, estimate ACV or volume, name 2-3 specific accounts.",bdkey:"segment"}
+];
+let ST={screen:0,pmname:'',featname:'',gate:'hard',roadmap:'',reviewdate:'',answers:Array(6).fill(''),qfiles:Array(6).fill(null).map(()=>[]),curQ:0,score:0,breakdown:{},actions:[],remediation:[],quotes:[],narrativeBefore:'',narrativeAfter:'',stakeholders:{sales:false,cs:false,eng:false},oppCost:'',engSize:'',engRisk:'',engDeps:'',premortemHeadline:'',premortemReasons:'',rightToWin:'',bulkfiles:[],totalsize:0,urls:[],pastedata:'',specdata:null,learnings:[]};
+
+function getKey(){return document.getElementById('apikey').value.trim();}
+function checkKey(){
+  const k=getKey();const dot=document.getElementById('api-dot');const txt=document.getElementById('api-status-text');const btn=document.getElementById('btn-begin');
+  if(k.startsWith('sk-ant-')&&k.length>20){dot.className='api-dot ok';txt.style.color='var(--go)';txt.textContent='API key valid — ready to use';btn.disabled=false;btn.textContent='Begin Session →';}
+  else if(k.length>0){dot.className='api-dot bad';txt.style.color='var(--warn)';txt.textContent='Key format looks incorrect — should start with sk-ant-';btn.disabled=true;btn.textContent='Enter valid key above';}
+  else{dot.className='api-dot bad';txt.style.color='var(--text3)';txt.textContent='No key entered — paste your key above to activate';btn.disabled=true;btn.textContent='Paste API key above to begin';}
+}
+
+async function callAI(prompt,maxT=1200){
+  const k=getKey();
+  if(!k||!k.startsWith('sk-ant-'))throw new Error('No valid API key. Paste your Anthropic key at the top of the page.');
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxT,messages:[{role:'user',content:prompt}]})});
+  const d=await r.json();
+  if(d.error)throw new Error('API error: '+d.error.message);
+  return d.content.map(c=>c.text||'').join('');
+}
+
+const dotsEl=document.getElementById('dots');
+for(let i=0;i<5;i++){const d=document.createElement('div');d.className='dot';d.id='d'+i;dotsEl.appendChild(d);}
+function updProg(p){document.getElementById('pfill').style.width=p+'%'}
+function updDots(n){for(let i=0;i<5;i++){const d=document.getElementById('d'+i);d.className='dot'+(i<n?' done':i===n?' active':'')}}
+function goS(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('s'+n)?.classList.add('active');ST.screen=n;const pm={0:0,1:20,2:45,3:70,4:95};updProg(pm[n]||0);updDots(n);window.scrollTo(0,0);}
+function showSc(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  const prog={s0:0,s1:20,s1b:30,s1c:38,s2:45,s3:70,s4:95,sdone:100,sfollowup:70};
+  const dotMap={s0:0,s1:1,s1b:1,s1c:1,s2:2,s3:3,s4:4,sdone:5,sfollowup:3};
+  updProg(prog[id]||20);updDots(dotMap[id]||1);window.scrollTo(0,0);
+}
+document.querySelectorAll('#gatepills .pill').forEach(p=>p.addEventListener('click',()=>{document.querySelectorAll('#gatepills .pill').forEach(x=>x.classList.remove('sel'));p.classList.add('sel');ST.gate=p.dataset.v;const d={hard:'Feature cannot proceed below 75. Strictest gate.',warn:'PM warned if below 75 but can proceed.',score:'Score displayed for reference only.'};document.getElementById('gatedesc').textContent=d[ST.gate];}));
+
+function startSession(){
+  const n=document.getElementById('pmname').value.trim();const f=document.getElementById('featname').value.trim();
+  if(!n||!f){alert('Enter your name and feature name to begin.');return;}
+  if(!getKey()||!getKey().startsWith('sk-ant-')){alert('Paste a valid Anthropic API key at the top of the page first.');return;}
+  ST.pmname=n;ST.featname=f;ST.roadmap=document.getElementById('roadmap').value;ST.reviewdate=document.getElementById('reviewdate').value;
+  ST.answers=Array(6).fill('');ST.qfiles=Array(6).fill(null).map(()=>[]);ST.curQ=0;
+  initCustomerVoice();initRankList();renderQ(0);goS(1);
+}
+
+function renderQ(idx){
+  const q=Qs[idx];
+  const fh=ST.qfiles[idx].map((f,fi)=>`<div class="q-ftag"><span>${f.name}</span><span class="q-ftag-x" onclick="removeQF(${idx},${fi},this)">×</span></div>`).join('');
+  document.getElementById('qcontainer').innerHTML=`<div class="qcard"><div class="qnum">Question ${idx+1} of ${Qs.length}</div><div class="qtext">${q.q}</div><div class="qhint">${q.hint}</div><textarea id="ainput" rows="4" placeholder="Your answer..." oninput="onAIn()">${ST.answers[idx]||''}</textarea><div class="q-upload-row"><button class="q-ubtn" onclick="document.getElementById('qf${idx}').click()">↑ Attach evidence</button><input type="file" id="qf${idx}" multiple style="display:none" onchange="handleQF(${idx},this)" accept=".pdf,.csv,.docx,.xlsx,.txt,.png,.jpg,.jpeg"/><div class="q-ftags" id="qft${idx}">${fh}</div></div></div>`;
+  document.getElementById('btnprev').style.display=idx>0?'inline-flex':'none';
+  const btn=document.getElementById('btnnext');btn.disabled=!(ST.answers[idx]&&ST.answers[idx].length>20);btn.textContent=idx===Qs.length-1?'Score My Answers':'Continue →';btn.onclick=nextQ;document.getElementById('breakdown-area').style.display='none';
+}
+function onAIn(){const v=document.getElementById('ainput').value;ST.answers[ST.curQ]=v;document.getElementById('btnnext').disabled=v.trim().length<20;}
+function handleQF(idx,inp){Array.from(inp.files).forEach(f=>{ST.qfiles[idx].push(f);const t=document.createElement('div');t.className='q-ftag';t.innerHTML=`<span>${f.name}</span><span class="q-ftag-x" onclick="removeQF(${idx},${ST.qfiles[idx].length-1},this)">×</span>`;document.getElementById('qft'+idx).appendChild(t);});}
+function removeQF(idx,fi,el){ST.qfiles[idx].splice(fi,1);el.parentElement.remove();}
+function prevQ(){if(ST.curQ>0){ST.curQ--;renderQ(ST.curQ);}}
+async function nextQ(){const v=document.getElementById('ainput').value.trim();if(v.length<20)return;ST.answers[ST.curQ]=v;if(ST.curQ<Qs.length-1){ST.curQ++;renderQ(ST.curQ);}else await scoreAnswers();}
+
+async function scoreAnswers(){
+  const btn=document.getElementById('btnnext');btn.disabled=true;btn.textContent='Scoring...';
+  document.getElementById('qcontainer').innerHTML='<div class="loading"><div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div><span>Evaluating answers and evidence quality...</span></div>';
+  const qa=Qs.map((q,i)=>`Q${i+1}: ${q.q}\nAnswer: ${ST.answers[i]||'Not answered'}\nFiles: ${ST.qfiles[i].map(f=>f.name).join(', ')||'None'}`).join('\n\n');
+  const prevL=ST.learnings.length>0?`Prior learnings:\n${ST.learnings.map(l=>l.text.substring(0,120)).join('\n')}`:'';
+  const prompt=`You are a rigorous Senior PM Director. Be demanding — weak answers must score low.\nFeature: ${ST.featname} | PM: ${ST.pmname} | Roadmap: ${ST.roadmap||'None'}\n${prevL}\nQ&A:\n${qa}\nScore each 0-100: specificity, evidence, strategic clarity, measurability. +10 bonus for attached files.\nFor each area below 70, give 2-3 specific actionable next steps.\nReturn ONLY valid JSON (no markdown, no backticks):\n{"overall":<n>,"breakdown":{"jtbd":<n>,"timing":<n>,"metrics":<n>,"strategy":<n>,"diff":<n>,"segment":<n>},"verdict":"<pass|warn|fail>","summary":"<2 sentences>","action_areas":[{"area":"<n>","severity":"<urgent|moderate|good>","issue":"<1 sentence>","steps":["<action>","<action>","<action>"]}],"remediation_checklist":["<item>","<item>","<item>","<item>","<item>"]}`;
+  try{
+    const txt=await callAI(prompt,1800);
+    const p=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    ST.score=p.overall;ST.breakdown=p.breakdown||{};ST.actions=p.action_areas||[];ST.remediation=p.remediation_checklist||[];showScore(p);
+  }catch(e){
+    document.getElementById('qcontainer').innerHTML='';
+    const fb=document.getElementById('p1fb');fb.className='fbanner show err';
+    fb.textContent='Error: '+e.message;
+    btn.disabled=false;btn.textContent='Retry Scoring';btn.onclick=scoreAnswers;
+  }
+}
+
+function showScore(d){
+  const score=d.overall;document.getElementById('qcontainer').innerHTML='';
+  const sn=document.getElementById('scorenum');sn.textContent=score;sn.className='snum '+(score>=75?'hi':score>=60?'mid':'lo');
+  const fill=document.getElementById('sbarfill');fill.style.width=score+'%';fill.style.background=score>=75?'var(--go)':score>=60?'var(--warn)':'var(--stop)';
+  const fb=document.getElementById('p1fb');fb.className='fbanner show '+(score>=75?'ok':'err');fb.textContent=`Score ${score}/100 — ${d.summary}`;
+  const bdLabels={jtbd:'Job To Be Done',timing:'Why Now / Timing',metrics:'Success Metrics',strategy:'Strategic Value',diff:'Differentiation',segment:'Customer Segment'};
+  document.getElementById('bd-scores').innerHTML=Object.entries(d.breakdown||{}).map(([k,v])=>{const col=v>=75?'var(--go)':v>=60?'var(--warn)':'var(--stop)';return`<div class="bd-row"><div class="bd-label">${bdLabels[k]||k}</div><div class="bd-bar-w"><div class="bd-bar" style="width:${v}%;background:${col}"></div></div><div class="bd-sc" style="color:${col}">${v}</div></div>`;}).join('');
+  document.getElementById('action-cards').innerHTML=(d.action_areas||[]).map(a=>`<div class="acard ${a.severity}"><div class="atitle ${a.severity}">${a.severity==='urgent'?'⚠ URGENT: ':a.severity==='moderate'?'◉ IMPROVE: ':'✓ '}${a.area}</div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">${a.issue}</div><ul class="asteps">${(a.steps||[]).map(s=>`<li>${s}</li>`).join('')}</ul></div>`).join('');
+  document.getElementById('remediation-list').innerHTML=(d.remediation_checklist||[]).map(item=>`<li class="chk-row"><div class="chk" onclick="this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':''"></div><span class="chk-label">${item}</span></li>`).join('');
+  document.getElementById('breakdown-area').style.display='block';
+  document.getElementById('sstatus').textContent=score>=75?'Passed — ready for research':(ST.gate==='score'?'Score recorded':score>=60?'Warning — below threshold':'Blocked — below threshold');
+  // Show the prominent next-step button at bottom of breakdown area
+  const scoreNextRow = document.getElementById('score-next-row');
+  const scoreNextBtn = document.getElementById('btnnext-score');
+  const btn = document.getElementById('btnnext');
+
+  if(ST.gate==='hard'&&score<75){
+    // Blocked: show revise button in the breakdown, hide score-next-row
+    scoreNextRow.style.display='none';
+    scoreNextRow.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Score below 75 — address the required actions above before resubmitting</div><button class="btn btn-no" id="btnnext-score" style="padding:12px 32px;font-size:14px">Revise Answers</button>';
+    scoreNextRow.style.display='block';
+    document.getElementById('btnnext-score').onclick=()=>{ST.curQ=0;renderQ(0);fb.className='fbanner';scoreNextRow.style.display='none';};
+    btn.textContent='Revise Answers';btn.disabled=false;btn.onclick=()=>{ST.curQ=0;renderQ(0);fb.className='fbanner';scoreNextRow.style.display='none';};
+  } else {
+    // Passed or warn/score mode: show continue button
+    scoreNextRow.style.display='block';
+    scoreNextBtn.textContent=score>=75?'Continue to Customer Voice →':'Proceed Anyway — Customer Voice →';
+    scoreNextBtn.onclick=()=>showSc('s1b');
+    btn.textContent='Continue to Customer Voice →';btn.disabled=false;btn.onclick=()=>showSc('s1b');
+  }
+  // Scroll smoothly to the next-step button
+  setTimeout(()=>{ scoreNextRow.scrollIntoView({behavior:'smooth',block:'center'}); },500);
+}
+
+function initCustomerVoice(){document.getElementById('quote-list').innerHTML='';for(let i=0;i<3;i++)addQuote();}
+function addQuote(){const list=document.getElementById('quote-list');const row=document.createElement('div');row.className='quote-row';row.innerHTML='<textarea placeholder="Direct customer quote — exact words from Gong, interview, or support ticket..." rows="2"></textarea><input type="text" class="quote-src" placeholder="Source" /><button class="qrm" onclick="this.parentElement.remove()">×</button>';list.appendChild(row);}
+function proceedToP1c(){const rows=document.querySelectorAll('#quote-list .quote-row');const quotes=Array.from(rows).map(r=>{const tas=r.querySelectorAll('textarea,input');return{quote:tas[0]?.value.trim(),source:tas[1]?.value.trim()};}).filter(q=>q.quote&&q.quote.length>10);if(quotes.length<3){const fb=document.getElementById('p1bfb');fb.className='fbanner show err';fb.textContent='Minimum 3 customer quotes required.';return;}ST.quotes=quotes;ST.narrativeBefore=document.getElementById('narrative-before').value;ST.narrativeAfter=document.getElementById('narrative-after').value;ST.stakeholders={sales:document.getElementById('chk-sales').classList.contains('checked'),cs:document.getElementById('chk-cs').classList.contains('checked'),eng:document.getElementById('chk-eng').classList.contains('checked')};showSc('s1c');}
+function toggleChk(id){const el=document.getElementById(id);el.classList.toggle('checked');el.textContent=el.classList.contains('checked')?'✓':'';}
+function initRankList(){document.getElementById('rank-list').innerHTML='';for(let i=0;i<3;i++)addRankRow();}
+function addRankRow(){const list=document.getElementById('rank-list');const row=document.createElement('div');row.className='rank-row';const n=list.children.length+1;row.innerHTML=`<div class="rank-num">${n}</div><input type="text" placeholder="Feature name" style="flex:1;margin-right:10px"/><input type="number" min="1" max="10" placeholder="Score 1-10" style="width:100px" oninput="updRankSc(this)"/><div class="rank-sc" style="color:var(--text3)">—</div>`;list.appendChild(row);}
+function updRankSc(inp){const v=parseInt(inp.value);const c=inp.parentElement.querySelector('.rank-sc');if(!isNaN(v)){c.textContent=v;c.className='rank-sc '+(v>=7?'hi':v>=5?'mid':'lo');}}
+function handleBulkFiles(inp){const max=20*1024*1024;Array.from(inp.files).forEach(f=>{if(ST.totalsize+f.size>max){alert('20MB limit exceeded.');return;}ST.bulkfiles.push(f);ST.totalsize+=f.size;const t=document.createElement('div');t.className='ftag';t.innerHTML=`<span>${f.name} <span style="color:var(--text3)">(${(f.size/1024).toFixed(0)}KB)</span></span><span class="ftag-x" onclick="removeBF('${f.name}',${f.size},this)">×</span>`;document.getElementById('bulkftags').appendChild(t);updSize();});}
+function removeBF(name,size,el){ST.bulkfiles=ST.bulkfiles.filter(f=>f.name!==name);ST.totalsize-=size;el.parentElement.remove();updSize();}
+function updSize(){document.getElementById('sizectr').textContent=`${(ST.totalsize/1024/1024).toFixed(1)} MB / 20 MB`;}
+function addUrl(){if(document.querySelectorAll('.urlinput').length>=3){alert('Max 3 URLs.');return;}const r=document.createElement('div');r.className='urow';r.innerHTML='<input type="text" placeholder="https://competitor.com" class="urlinput"/><button class="uadd" onclick="this.parentElement.remove()">−</button>';document.getElementById('urllist').appendChild(r);}
+
+async function runResearch(){
+  const urls=Array.from(document.querySelectorAll('.urlinput')).map(i=>i.value.trim()).filter(Boolean);const paste=document.getElementById('pastedata').value.trim();const allQF=ST.qfiles.flat();
+  if(!urls.length&&!ST.bulkfiles.length&&!paste&&!allQF.length){const fb=document.getElementById('p2fb');fb.className='fbanner show err';fb.textContent='Upload at least one data source.';return;}
+  ST.urls=urls;ST.pastedata=paste;ST.rightToWin=document.getElementById('right-to-win').value;ST.engSize=document.getElementById('eng-size').value;ST.engRisk=document.getElementById('eng-risk').value;ST.engDeps=document.getElementById('eng-deps').value;ST.premortemHeadline=document.getElementById('premortem-headline').value;ST.premortemReasons=document.getElementById('premortem-reasons').value;ST.oppCost=document.getElementById('opp-cost').value;
+  goS(3);await genSpec();
+}
+async function genSpec(){
+  document.getElementById('specloading').style.display='flex';document.getElementById('specbody').style.display='none';
+  const qa=Qs.map((q,i)=>`Q: ${q.q}\nA: ${ST.answers[i]||''}\nFiles: ${ST.qfiles[i].map(f=>f.name).join(', ')||'None'}`).join('\n\n');
+  const allEv=[...ST.bulkfiles,...ST.qfiles.flat()].map(f=>f.name).join(', ')||'None';
+  const prevL=ST.learnings.length>0?`Learnings:\n${ST.learnings.map(l=>l.text.substring(0,180)).join('\n')}`:'No prior learnings.';
+  const quotesText=ST.quotes.map((q,i)=>`${i+1}. "${q.quote}" — ${q.source||'unspecified'}`).join('\n');
+  const rankRows=Array.from(document.querySelectorAll('#rank-list .rank-row')).map(r=>{const ins=r.querySelectorAll('input');return`${ins[0]?.value||'?'} (score: ${ins[1]?.value||'?'})`;}).join(', ');
+  const prompt=`You are an elite CPO-level product strategist. Generate a comprehensive feature spec.\nFeature: ${ST.featname} | PM: ${ST.pmname} | Score: ${ST.score}/100\nRoadmap: ${ST.roadmap||'None'} | Review date: ${ST.reviewdate||'Not set'}\n${prevL}\nQ&A:\n${qa}\nCustomer quotes:\n${quotesText}\nBefore: ${ST.narrativeBefore||'Not provided'} | After: ${ST.narrativeAfter||'Not provided'}\nStakeholders: Sales=${ST.stakeholders.sales}, CS=${ST.stakeholders.cs}, Eng=${ST.stakeholders.eng}\nRanking: ${rankRows||'Not provided'} | Opp cost: ${ST.oppCost||'Not addressed'}\nEng: Size=${ST.engSize||'Not estimated'}, Risk=${ST.engRisk||'Unknown'}, Deps=${ST.engDeps||'None'}\nPre-mortem: ${ST.premortemHeadline||'Not completed'} — ${ST.premortemReasons||'Not completed'}\nRight to win: ${ST.rightToWin||'Not addressed'}\nFiles: ${allEv} | URLs: ${ST.urls.join(', ')||'None'}\nData: ${ST.pastedata?ST.pastedata.substring(0,2200):'None'}\nReturn ONLY valid JSON (no markdown, no backticks):\n{"rice_score":"<n>","ice_score":"<n>","moscow":"<Must Have|Should Have|Could Have|Won't Have>","verdict":"<GO|CONDITIONAL|NO-GO>","verdict_reasons":["<r>","<r>","<r>"],"context":"<2-3 sentences>","jtbd":"<statement>","customer_narrative":"<2-3 sentences>","competitive_position":"<3-4 sentences>","principles":"<3 numbered>","requirements":"<6-8 numbered>","success_metrics":"<4 KPIs with baselines>","risks":"<top 4 with mitigations>","premortem_assessment":"<2-3 sentences>","rollback_plan":"<trigger and steps>","engineering_summary":"<size, risk, deps>"}`;
+  try{
+    const txt=await callAI(prompt,1600);ST.specdata=JSON.parse(txt.replace(/```json|```/g,'').trim());renderSpec(ST.specdata);
+  }catch(e){
+    document.getElementById('specloading').style.display='none';document.getElementById('specbody').style.display='block';
+    document.getElementById('specbody').innerHTML=`<div class="fbanner show err" style="display:block">Error: ${e.message}<br><br><button class="btn btn-g" onclick="genSpec()">Retry</button></div>`;
+  }
+}
+function renderSpec(d){
+  document.getElementById('specloading').style.display='none';document.getElementById('specbody').style.display='block';
+  document.getElementById('rice').textContent=d.rice_score;document.getElementById('ice').textContent=d.ice_score;document.getElementById('moscow').textContent=d.moscow||'—';
+  const v=d.verdict;document.getElementById('vcard').className='vcard '+(v==='GO'?'vc-go':v==='NO-GO'?'vc-no':'vc-cond');
+  const vt=document.getElementById('vtitle');vt.className='vtitle '+(v==='GO'?'vt-go':v==='NO-GO'?'vt-no':'vt-cond');vt.textContent=v==='GO'?'Recommended to Build':v==='NO-GO'?'Not Recommended':'Conditional Approval';
+  const vb=document.getElementById('vbadge');vb.className='badge '+(v==='GO'?'bg':v==='NO-GO'?'br':'bw');vb.textContent=v;
+  document.getElementById('vreasons').innerHTML=(d.verdict_reasons||[]).map(r=>`<div class="ritem"><div class="rdot"></div><span>${r}</span></div>`).join('');
+  ['sctx','sjtbd','snarrative','scomp','spremortem','seng'].forEach(id=>{const key={sctx:'context',sjtbd:'jtbd',snarrative:'customer_narrative',scomp:'competitive_position',spremortem:'premortem_assessment',seng:'engineering_summary'}[id];document.getElementById(id).textContent=d[key]||'—';});
+  ['sprins','sreqs','smets','srisks','srollback'].forEach(id=>{const key={sprins:'principles',sreqs:'requirements',smets:'success_metrics',srisks:'risks',srollback:'rollback_plan'}[id];document.getElementById(id).innerHTML=(d[key]||'—').replace(/\n/g,'<br>');});
+  document.getElementById('review-date-display').textContent=ST.reviewdate?`PM committed to return with post-launch results by ${ST.reviewdate}`:'No review date set.';
+  initMetrics();
+}
+function pmDecide(a){if(a==='approve'){document.getElementById('donefeat').textContent=ST.featname;document.getElementById('donepm').textContent=ST.pmname;document.getElementById('done-review-date').textContent=ST.reviewdate?`Review date: ${ST.reviewdate}`:'';showSc('sdone');updProg(100);updDots(5);}else if(a==='followup'){showSc('sfollowup');}else{if(confirm('Reject and return to Phase 1?')){ST.answers=Array(6).fill('');ST.curQ=0;ST.score=0;document.getElementById('scorenum').textContent='0';document.getElementById('sbarfill').style.width='0%';document.getElementById('p1fb').className='fbanner';document.getElementById('breakdown-area').style.display='none';renderQ(0);goS(1);}}}
+async function rerunSpec(){const extra=document.getElementById('followuptxt').value.trim();if(!extra){alert('Add context before rerunning.');return;}ST.pastedata=(ST.pastedata||'')+'\n\nFollow-up: '+extra;goS(3);await genSpec();}
+function initMetrics(){const tbody=document.getElementById('mtbody');tbody.innerHTML='';const ms=ST.specdata?ST.specdata.success_metrics.split('\n').filter(Boolean).slice(0,4):['Adoption Rate','Retention Rate','Support Deflection','NPS Delta'];ms.forEach(m=>{const label=m.split(':')[0].trim();const row=document.createElement('tr');row.innerHTML=`<td style="color:var(--text);font-size:12px">${label}</td><td><input class="ism" placeholder="Target"/></td><td><input class="ism" placeholder="Actual"/></td><td class="vcell">—</td>`;row.querySelectorAll('.ism').forEach(inp=>inp.addEventListener('input',()=>calcVar(row)));tbody.appendChild(row);});}
+function calcVar(row){const ins=row.querySelectorAll('.ism');const p=parseFloat(ins[0].value),a=parseFloat(ins[1].value);const c=row.querySelector('.vcell');if(!isNaN(p)&&!isNaN(a)&&p!==0){const v=(((a-p)/p)*100).toFixed(1);c.textContent=(v>0?'+':'')+v+'%';c.className='vcell '+(parseFloat(v)>=0?'vpos':'vneg');}}
+function addMetricRow(){const row=document.createElement('tr');row.innerHTML='<td><input class="ism" placeholder="Metric name"/></td><td><input class="ism" placeholder="Target"/></td><td><input class="ism" placeholder="Actual"/></td><td class="vcell">—</td>';row.querySelectorAll('.ism').forEach(inp=>inp.addEventListener('input',()=>calcVar(row)));document.getElementById('mtbody').appendChild(row);}
+async function analyzeVariance(){const rows=document.querySelectorAll('#mtbody tr');const md=Array.from(rows).map(r=>{const ins=r.querySelectorAll('.ism');const tds=r.querySelectorAll('td');return{metric:ins[0]?ins[0].value:tds[0]?.textContent,predicted:ins[0]?ins[1]?.value:ins[0]?.value,actual:ins[0]?ins[2]?.value:ins[1]?.value,variance:tds[3]?.textContent};}).filter(m=>m.metric&&m.predicted&&m.actual);const qual=document.getElementById('qualfb').value;document.getElementById('varanalysis').style.display='block';document.getElementById('vartext').textContent='Analyzing...';const prompt=`Senior PM post-launch analysis. Feature: ${ST.featname}. Verdict: ${ST.specdata?.verdict||'Unknown'}. Metrics: ${JSON.stringify(md)}. Qual: ${qual||'None'}. Pre-mortem predicted: ${ST.premortemReasons||'Not recorded'}. Provide: 1) Direct 3-4 sentence analysis. 2) Single most important learning. 3) One specific process change. Direct, no generic advice.`;try{const txt=await callAI(prompt,600);document.getElementById('vartext').textContent=txt;ST.learnings.push({text:`[${ST.featname}] ${txt.substring(0,250)}`,date:new Date().toLocaleDateString()});renderLearnings();}catch(e){document.getElementById('vartext').textContent='Error: '+e.message;}}
+function renderLearnings(){const el=document.getElementById('learninglog');el.innerHTML=ST.learnings.length===0?'<div style="font-size:12px;color:var(--text3);padding:12px 0">No learnings logged yet. Analyze variance above to generate the first entry.</div>':ST.learnings.map(l=>`<div class="llog"><div class="llog-meta">${l.date}</div>${l.text}</div>`).join('');}
+function exportNotion(){alert('To connect Notion:\n\n1. notion.so → Settings → Connections → Develop integrations\n2. Create integration → copy API token\n3. Share target page with the integration\n4. Add NOTION_TOKEN + NOTION_PAGE_ID to Vercel environment variables');}
+function newSession(){ST={...ST,pmname:'',featname:'',roadmap:'',reviewdate:'',answers:Array(6).fill(''),qfiles:Array(6).fill(null).map(()=>[]),curQ:0,score:0,breakdown:{},actions:[],remediation:[],quotes:[],narrativeBefore:'',narrativeAfter:'',stakeholders:{sales:false,cs:false,eng:false},oppCost:'',engSize:'',engRisk:'',engDeps:'',premortemHeadline:'',premortemReasons:'',rightToWin:'',bulkfiles:[],totalsize:0,urls:[],pastedata:'',specdata:null};document.getElementById('pmname').value='';document.getElementById('featname').value='';document.getElementById('roadmap').value='';document.getElementById('reviewdate').value='';document.getElementById('sizectr').textContent='0 MB / 20 MB';document.getElementById('bulkftags').innerHTML='';goS(0);}
+renderLearnings();updDots(0);
+</script>
+</body>
+</html>
